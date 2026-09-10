@@ -1,0 +1,19 @@
+# Core dependencies
+Django>=5.2
+channels>=4.0
+channels-redis>=4.1
+daphne>=4.1
+
+# Face recognition (OpenCV with face modules)
+opencv-contrib-python>=4.9.0
+numpy>=1.24.0
+
+# REST API
+djangorestframework>=3.14
+django-cors-headers>=4.3
+
+# Async support
+asgiref>=3.7
+
+# Optional: for production deployment
+gunicorn>=21.0
