@@ -10,6 +10,8 @@ from .serializer import *
 class SessionViewSet(viewsets.ModelViewSet):
     queryset = Session.objects.all().order_by('-created_at')
     serializer_class = SessionSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
     
     def perform_destroy(self, instance):
         # Instead of actually deleting, we can deactivate
@@ -19,6 +21,8 @@ class SessionViewSet(viewsets.ModelViewSet):
 class PersonViewSet(viewsets.ModelViewSet):
     queryset = Person.objects.all().order_by('-created_at')
     serializer_class = PersonSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
 
 class SessionPersonViewSet(viewsets.ModelViewSet):
     queryset = SessionPerson.objects.all()

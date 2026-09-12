@@ -213,6 +213,26 @@ import '../models/models.dart';
 import '../theme/app_theme.dart';
 import 'session_participants_screen.dart';
 
+// Helper for formatting weekly schedule display in session cards
+class _SessionScheduleUtils {
+  static const List<String> dayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+    'Friday', 'Saturday', 'Sunday'
+  ];
+
+  static String? formatTime(String? timeStr) {
+    if (timeStr == null) return null;
+    // timeStr is in HH:mm format
+    final parts = timeStr.split(':');
+    if (parts.length != 2) return timeStr;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '$displayHour:${parts[1].padLeft(2, '0')} $period';
+  }
+}
+
 class SessionsScreen extends StatefulWidget {
   @override
   _SessionsScreenState createState() => _SessionsScreenState();
@@ -376,6 +396,30 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                     ),
                                   ],
                                 ),
+                                // Weekly schedule display
+                                if (session.weeklySchedule != null ||
+                                   (session.weeklyDay != null && session.weeklyStartTime != null)) ...[
+                                  const SizedBox(height: AppSpace.xs),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.schedule, size: 14, color: AppColors.accent),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          session.weeklySchedule ??
+                                              'Every ${_SessionScheduleUtils.dayNames[session.weeklyDay!]} '
+                                              '${_SessionScheduleUtils.formatTime(session.weeklyStartTime)}'
+                                              ' ${session.weeklyEndTime != null ? "- ${_SessionScheduleUtils.formatTime(session.weeklyEndTime)}" : ""}',
+                                          style: const TextStyle(
+                                            color: AppColors.accent,
+                                            fontSize: 12,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -436,6 +480,43 @@ class _SessionDialogState extends State<SessionDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  
+  // Weekly schedule fields
+  int? _selectedDay;  // 0=Monday ... 6=Sunday
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
+
+  final List<String> _dayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+    'Friday', 'Saturday', 'Sunday'
+  ];
+
+  Future<void> _pickStartTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _startTime ?? TimeOfDay.now(),
+    );
+    if (time != null) {
+      setState(() => _startTime = time);
+    }
+  }
+
+  Future<void> _pickEndTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _endTime ?? TimeOfDay.now(),
+    );
+    if (time != null) {
+      setState(() => _endTime = time);
+    }
+  }
+
+  String? _formatTime(TimeOfDay? time) {
+    if (time == null) return null;
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -444,22 +525,101 @@ class _SessionDialogState extends State<SessionDialog> {
       title: const Text('New session'),
       content: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Session name'),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) => (value == null || value.isEmpty) ? 'Enter a session name' : null,
-            ),
-            const SizedBox(height: AppSpace.sm),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Session name'),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) => (value == null || value.isEmpty) ? 'Enter a session name' : null,
+              ),
+              const SizedBox(height: AppSpace.sm),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                maxLines: 3,
+              ),
+              const SizedBox(height: AppSpace.lg),
+              const Text(
+                'Weekly Schedule (optional)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: AppSpace.sm),
+              // Day picker
+              DropdownButtonFormField<int?>(
+                value: _selectedDay,
+                decoration: const InputDecoration(labelText: 'Day of week'),
+                hint: const Text('Select a day (or none for one-time session)'),
+                items: List.generate(7, (index) {
+                  return DropdownMenuItem(
+                    value: index,
+                    child: Text(_dayNames[index]),
+                  );
+                }),
+                onChanged: (value) => setState(() => _selectedDay = value),
+              ),
+              const SizedBox(height: AppSpace.sm),
+              // Start time
+              InkWell(
+                onTap: _pickStartTime,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'Start time'),
+                  child: Text(
+                    _startTime != null
+                        ? _startTime!.format(context)
+                        : 'Select start time',
+                    style: TextStyle(
+                      color: _startTime != null ? AppColors.ink : AppColors.inkMuted,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.sm),
+              // End time
+              InkWell(
+                onTap: _pickEndTime,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: InputDecorator(
+                  decoration: const InputDecoration(labelText: 'End time'),
+                  child: Text(
+                    _endTime != null
+                        ? _endTime!.format(context)
+                        : 'Select end time',
+                    style: TextStyle(
+                      color: _endTime != null ? AppColors.ink : AppColors.inkMuted,
+                    ),
+                  ),
+                ),
+              ),
+              // Preview of schedule
+              if (_selectedDay != null && _startTime != null)
+                Container(
+                  margin: const EdgeInsets.only(top: AppSpace.sm),
+                  padding: const EdgeInsets.all(AppSpace.sm),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule, size: 16, color: AppColors.accent),
+                      const SizedBox(width: AppSpace.sm),
+                      Expanded(
+                        child: Text(
+                          'Every ${_dayNames[_selectedDay!]} '
+                          '${_startTime!.format(context)}'
+                          ' ${(_endTime != null ? '-\u2022- ${_endTime!.format(context)}' : '')}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -477,6 +637,9 @@ class _SessionDialogState extends State<SessionDialog> {
                 isActive: true,
                 createdAt: DateTime.now(),
                 participantCount: 0,
+                weeklyDay: _selectedDay,
+                weeklyStartTime: _formatTime(_startTime),
+                weeklyEndTime: _formatTime(_endTime),
               );
               widget.onSave(session);
             }

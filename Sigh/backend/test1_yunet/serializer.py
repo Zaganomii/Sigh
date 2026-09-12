@@ -9,10 +9,15 @@ class PersonSerializer(serializers.ModelSerializer):
 
 class SessionSerializer(serializers.ModelSerializer):
     participant_count = serializers.SerializerMethodField()
+    weekly_schedule = serializers.ReadOnlyField(default=None)
     
     class Meta:
         model = Session
-        fields = ['id', 'name', 'description', 'is_active', 'created_at', 'participant_count']
+        fields = [
+            'id', 'name', 'description', 'is_active', 'created_at',
+            'participant_count', 'weekly_day', 'weekly_start_time',
+            'weekly_end_time', 'weekly_schedule'
+        ]
         read_only_fields = ['id', 'created_at']
     
     def get_participant_count(self, obj):

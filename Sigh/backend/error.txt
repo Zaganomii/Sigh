@@ -1,18 +1,25 @@
-INFO 2026-09-09 19:52:31,080 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,096 face_streamer Error processing face: 'numpy.int32' object is not iterable
-INFO 2026-09-09 19:52:31,161 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,175 face_streamer Error processing face: 'numpy.int32' object is not iterable
-INFO 2026-09-09 19:52:31,245 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,261 face_streamer Error processing face: 'numpy.int32' object is not iterable
-INFO 2026-09-09 19:52:31,294 face_streamer Attempting to register face: b as b
-INFO 2026-09-09 19:52:31,331 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,346 face_streamer Error processing face: 'numpy.int32' object is not iterable
-INFO 2026-09-09 19:52:31,371 face_streamer Successfully registered: b as b
-INFO 2026-09-09 19:52:31,414 face_streamer Frame processing: detected 1 faces
-INFO 2026-09-09 19:52:31,415 face_streamer Loaded 1 faces from database
-ERROR 2026-09-09 19:52:31,429 face_streamer Error processing face: module 'django' has no attribute 'settings'
-INFO 2026-09-09 19:52:31,497 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,513 face_streamer Error processing face: module 'django' has no attribute 'settings'
-INFO 2026-09-09 19:52:31,579 face_streamer Frame processing: detected 1 faces
-ERROR 2026-09-09 19:52:31,594 face_streamer Error processing face: module 'django' has no attribute 'settings'
-INFO 2026-09-09 19:52:31,660 face_streamer Frame processing: detected 1 faces
+# manage.py shell
+from test1_yunet.models import Person
+import pickle, numpy as np
+
+for p in Person.objects.all():
+    if not p.face_encoding:
+        print(p.name, "-> no encoding")
+        continue
+    e = pickle.loads(p.face_encoding)
+    e = np.asarray(e, dtype=np.float32)
+    print(f"{p.name}: dim={e.shape} norm={np.linalg.norm(e):.4f} "
+          f"mean={e.mean():.4f} std={e.std():.4f} "
+          f"min={e.min():.4f} max={e.max():.4f}")
+
+Expect: dim=(128,) (SFace is 128-D), norm≈1.0, std in the ~0.05–0.15 range, values roughly symmetric around zero.
+
+Red flags:
+
+    dim is not 128 → you stored the wrong thing
+
+    norm far from 1.0 → normalization was skipped or corrupted
+
+    std near 0 → you stored a constant (broken alignment / thread race)
+
+    std enormous → corrupted memory from the race

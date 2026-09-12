@@ -113,12 +113,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # YuNet configuration
 YUNET_MODEL_PATH = BASE_DIR / "test1_yunet" / "face_detection_yunet_2023mar.onnx"  # YuNet model
 YUNET_INPUT_SIZE = 320  # Can be 320, 416, 640 (higher = more accurate but slower)
-YUNET_FACE_THRESHOLD = 0.6  # Confidence threshold for face detection
+YUNET_FACE_THRESHOLD = 0.5  # Confidence threshold for face detection (0.5 = good balance; lower = more detections but more false positives)
 YUNET_MEAN_VAL = 104.0  # YuNet expects BGR input with this mean value
 
 # SFace face recognition configuration
 RECOGNITION_MODEL_PATH = BASE_DIR / "test1_yunet" / "face_recognition_sface_2021dec.onnx"  # SFace model (512-D embeddings)
-FACE_SIMILARITY_THRESHOLD = 0.6  # Cosine similarity threshold for SFace (512-D). 0.6 is a common verification cutoff; lower = more permissive, higher = stricter.
+FACE_SIMILARITY_THRESHOLD = 0.5  # Cosine similarity threshold for SFace (512-D). 0.6 = stricter, recommended when few people are enrolled.
 
 # Logging
 LOGGING = {

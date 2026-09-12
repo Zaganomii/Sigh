@@ -5,6 +5,10 @@ class Session {
   final bool isActive;
   final DateTime createdAt;
   final int participantCount;
+  final int? weeklyDay;            // 0=Monday ... 6=Sunday, null if not set
+  final String? weeklyStartTime;   // HH:mm format
+  final String? weeklyEndTime;     // HH:mm format
+  final String? weeklySchedule;    // Human-readable string from backend
 
   Session({
     required this.id,
@@ -13,6 +17,10 @@ class Session {
     required this.isActive,
     required this.createdAt,
     required this.participantCount,
+    this.weeklyDay,
+    this.weeklyStartTime,
+    this.weeklyEndTime,
+    this.weeklySchedule,
   });
 
   factory Session.fromJson(Map<String, dynamic> json) {
@@ -23,6 +31,10 @@ class Session {
       isActive: json['is_active'],
       createdAt: DateTime.parse(json['created_at']),
       participantCount: json['participant_count'] ?? 0,
+      weeklyDay: json['weekly_day'],
+      weeklyStartTime: json['weekly_start_time'],
+      weeklyEndTime: json['weekly_end_time'],
+      weeklySchedule: json['weekly_schedule'],
     );
   }
 
@@ -31,6 +43,9 @@ class Session {
       'name': name,
       'description': description,
       'is_active': isActive,
+      if (weeklyDay != null) 'weekly_day': weeklyDay,
+      if (weeklyStartTime != null) 'weekly_start_time': weeklyStartTime,
+      if (weeklyEndTime != null) 'weekly_end_time': weeklyEndTime,
     };
   }
 }
